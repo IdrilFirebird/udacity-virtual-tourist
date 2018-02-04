@@ -14,6 +14,8 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
     
     @IBOutlet weak var mapView: MKMapView!
     
+    var editMode: Bool = false
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
@@ -27,12 +29,13 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         
         mapView.addAnnotations(getAllSavedPins())
         
+        addNavBarButton()
         
     }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    
+    func addNavBarButton() {
+        let editButton = UIBarButtonItem(title: "Delete Pins", style: .plain, target: self, action: #selector(switchEditMode))
+        self.navigationItem.rightBarButtonItem = editButton
     }
     
     @objc func addAnnotation(tapGestureRecognizer: UITapGestureRecognizer) {
@@ -46,6 +49,22 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
             mapView.addAnnotation(pin)
             
         }
+    }
+    
+    @objc func switchEditMode() {
+        if editMode {
+            self.navigationItem.rightBarButtonItem?.title = "Delete Pins"
+            editMode = false
+        } else {
+            self.navigationItem.rightBarButtonItem?.title = "Done"
+            editMode = true
+        }
+    }
+    
+    func deletePin(pin: MapPin) {
+        mapView.removeAnnotation(pin)
+        CoreDataStack.sharedInstance().managedObjectContext.delete(pin)
+        CoreDataStack.sharedInstance().saveContext()
     }
     
     func getAllSavedPins() -> [MapPin] {
@@ -82,17 +101,27 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
     }
     
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-        print(view)
-        let selectedPin = view.annotation as! MapPin
-        
-        performSegue(withIdentifier: "photosView", sender: selectedPin)
+        if editMode {
+            let alert = UIAlertController(title: "Remove Pin!", message: "Do you realy wan't to delete this Pin", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Cancel", style: .default, handler: nil))
+            alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: {(action: UIAlertAction) in
+                self.deletePin(pin: view.annotation! as! MapPin)
+            }))
+            present(alert, animated: true, completion: nil)
+        } else {
+            let selectedPin = view.annotation as! MapPin
+            
+            performSegue(withIdentifier: "photosView", sender: selectedPin)
+        }
     }
     
     //MARK: GestureDelegate Methods
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        if editMode {
+            return false
+        }
         if (touch.view is MKAnnotationView) {
             print("pin was taped \((touch.view as! MKAnnotationView)    )")
-            // Here transistion to next View with pictures
             return false
         } else {
             return true

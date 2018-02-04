@@ -69,12 +69,7 @@ class FlickrClient {
         
         
         var urlString = FlickrClient.urlScheme + "://" + FlickrClient.apiHost + FlickrClient.apiPath + escapedParameters(methodParameters as [String: AnyObject])
-//        var components = URLComponents()
-//        components.scheme = FlickrClient.urlScheme
-//        components.host = FlickrClient.apiHost
-//
-//        let path =  FlickrClient.apiPath + escapedParameters(methodParameters as [String: AnyObject])
-//        components.path = path
+
         let url = URL(string: urlString)!
         let request = URLRequest(url: url)
      
@@ -101,7 +96,7 @@ class FlickrClient {
                 if let photosDict = parsedResult?["photos"] as? [String: AnyObject], let photos = photosDict["photo"] as? [[String: AnyObject]] {
                     
                     DispatchQueue.main.async {
-                        let photoRange =  photos.count < 21 ? 0...photos.count : 0...21
+                        let photoRange =  photos.count < 21 ? 0...photos.count : 0...20
                         
                         for _ in photoRange {
                             let index: Int = Int(arc4random_uniform(UInt32(photos.count)))
@@ -136,24 +131,13 @@ class FlickrClient {
         
         taskForGetRequest(request: request) { (success, error, data) in
             if !success {
-                photo.imagePath = nil
                 handler(success, error, nil)
             } else {
                 if let result = data {
                     DispatchQueue.main.async {
-                        let fileName = (photo.flickrURL! as NSString).lastPathComponent
-                        let path = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
-                        let imagePath = path + "/Images/" + fileName
-                        
-//                        do {
-//                            try FileManager.default.createDirectory(atPath: path + "/Images", withIntermediateDirectories: false, attributes: nil)
-//                        } catch let error as NSError {
-//                            print(error)
-//                        }
-                        
-                        FileManager.default.createFile(atPath: imagePath, contents: result as? Data, attributes: nil)
-                        
-                        photo.imagePath = imagePath
+//                     
+                        photo.image = result as? NSData
+//
                         handler(true,nil,nil)
                     }
                 } else {
@@ -193,22 +177,6 @@ class FlickrClient {
             handler(true, nil, data as AnyObject)
     
         }
-        
-//            {
-//                farm = 8;
-//                "height_m" = 333;
-//                id = 7276658202;
-//                isfamily = 0;
-//                isfriend = 0;
-//                ispublic = 1;
-//                owner = "79468477@N08";
-//                secret = 83373a90ed;
-//                server = 7215;
-//                title = "IMG_0248 Werntalbahn";
-//                "url_m" = "https://farm8.staticflickr.com/7215/7276658202_83373a90ed.jpg";
-//                "width_m" = 500;
-//        }
-        
         task.resume()
     }
   
@@ -219,35 +187,6 @@ class FlickrClient {
         let userInfo = [NSLocalizedDescriptionKey : error]
         handler(false, NSError(domain: "execRequest", code: 1, userInfo: userInfo), nil)
     }
-    
-//    private func convertDataWithCompletionHandler(_ data: Data, completionHandlerForConvertData: (_ result: AnyObject?, _ error: NSError?) -> Void) {
-//
-//        var parsedResult: AnyObject! = nil
-//        do {
-//            parsedResult = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as AnyObject
-//        } catch {
-//            let userInfo = [NSLocalizedDescriptionKey : "Could not parse the data as JSON: '\(data)'"]
-//            completionHandlerForConvertData(nil, NSError(domain: "convertDataWithCompletionHandler", code: 1, userInfo: userInfo))
-//        }
-//
-//        completionHandlerForConvertData(parsedResult, nil)
-//    }
-    
-//    private func apiURLFromParameters(baseURL_ parameters: [String:String], withPathExtension: String? = nil) -> URL {
-//
-//        var components = URLComponents()
-//        components.scheme = FlickrClient.urlScheme
-//        components.host = FlickrClient.apiHost
-//        components.path = FlickrClient.apiPath + (withPathExtension ?? "")
-//        components.queryItems = [URLQueryItem]()
-//
-//        for (key, value) in parameters {
-//            let queryItem = URLQueryItem(name: key, value: "\(value)")
-//            components.queryItems!.append(queryItem)
-//        }
-//
-//        return components.url!
-//    }
     
     // MARK: Helper for Escaping Parameters in URL
     
