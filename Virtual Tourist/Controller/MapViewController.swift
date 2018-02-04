@@ -27,12 +27,7 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         
         mapView.addAnnotations(getAllSavedPins())
         
-//        var flick = FlickrClient()
-//        flick.getPhotosList(location: CLLocationCoordinate2D(latitude: 50, longitude: 10)) { (success, error, result) in
-//            if success {
-//
-//            }
-//        }
+        
     }
 
     override func didReceiveMemoryWarning() {
@@ -44,11 +39,11 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         // only listen for began state of touch. When hold and move don't do anything (state changes to changed)
         if tapGestureRecognizer.state == .began {
             let point = tapGestureRecognizer.location(in: mapView)
-            let annotation = MKPointAnnotation()
-            annotation.coordinate = mapView.convert(point, toCoordinateFrom: mapView)
-            let pin = MapPin(coordinate: annotation.coordinate, context: CoreDataStack.sharedInstance().managedObjectContext)
+//            annotation.coordinate = mapView.convert(point, toCoordinateFrom: mapView)
+            let pin = MapPin(coordinate: mapView.convert(point, toCoordinateFrom: mapView), context: CoreDataStack.sharedInstance().managedObjectContext)
+//            let annotation = pin
             CoreDataStack.sharedInstance().saveContext()
-            mapView.addAnnotation(annotation)
+            mapView.addAnnotation(pin)
             
         }
     }
@@ -69,18 +64,21 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
     //MARK: MapViewDelegate Methods
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         let reuseId = "pin"
+        if let annotation = annotation as? MapPin {
         
-        var pin = mapView.dequeueReusableAnnotationView(withIdentifier: reuseId) as? MKPinAnnotationView
-        
-        if pin == nil {
-            pin = MKPinAnnotationView(annotation: annotation, reuseIdentifier: reuseId)
-            pin!.canShowCallout = false
+            if let pin = mapView.dequeueReusableAnnotationView(withIdentifier: reuseId) as? MKPinAnnotationView {
+                pin.annotation = annotation
+                return pin
+            } else {
+                let pin = MKPinAnnotationView(annotation: annotation, reuseIdentifier: reuseId)
+                pin.canShowCallout = false
+                pin.animatesDrop = true
+                pin.isDraggable = false
+                return pin
+            }
             
-        } else {
-            pin!.annotation = annotation
         }
-        
-        return pin
+        return nil
     }
     
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
